@@ -6,4 +6,4 @@
 
 - [Legacy OpenXAI style Eval - modified ground truths](./corrected_legacy/)
 
-- [Data Distribution Plots](DataDistributionPlots/README.md)
+- [Data Distribution Plots](https://github.com/kaivalyar/ox_wip/blob/main/DataDistributionPlots/README.md)
