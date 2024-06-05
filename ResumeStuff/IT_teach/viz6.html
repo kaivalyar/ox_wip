@@ -6,6 +6,28 @@
     <title>Viz. Token-wise Importances</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+<style>
+    h1 {
+        font-weight: bold;
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    h2 {
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .itw {
+        color: green;
+        text-decoration: underline;
+    }
+
+    .teacher {
+        color: red;
+        text-decoration: underline;
+    }    
+</style>
 </head>
 <body style="background: whitesmoke;">
     
@@ -398,7 +420,7 @@
         }
     </script>
 
-    <h1>Token-wise Importance Visualisations</h1>
+    <h1 style="text-align: center; font-weight: bold;">Does ChatGPT think your resume is like an <span class="itw" style="color: green;">IT worker</span> or more like a <span class="teacher" style="color: red;">teacher</span></h1>
     <!-- div id="file-list">
         <ul>
             <li data-file="DeNorms/0.csv">DeNorms/0.csv</li>
@@ -408,8 +430,14 @@
     <div>
 
         <div style="display: flex; justify-content: space-between;">
-            <img src="positive_weights_wordcloud.png" style="max-width: 45%; padding: 10px;">
-            <img src="negative_weights_wordcloud.png" style="max-width: 45%; padding: 10px;">
+            <div style="padding: 10px; max-width: 45%;">
+                <h2 style="text-align: center;">Words commonly associated with <span class="itw"> IT workers </span></h2>
+                <img src="positive_weights_wordcloud.png" style="max-width: 100%; padding: 10px;">
+            </div>
+            <div style="padding: 10px; max-width: 45%;">
+                <h2 style="text-align: center;">Words commonly associated with <span class="teacher">teachers</span> </h2>
+                <img src="negative_weights_wordcloud.png" style="max-width: 100%; padding: 10px;">
+            </div>
         </div>
         <p>
             <a href="DATA/input_data_stats.txt" >Data Description</a>
