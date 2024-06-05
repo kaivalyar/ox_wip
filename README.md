@@ -13,8 +13,6 @@
 
 	- [Info Tech (vs teachers) Resume Analysis](./ResumeStuff/IT_teach/viz6.html)
 
-	- [Accountants (vs aviators) Resume Analysis](./ResumeStuff/ACC_avi/viz6.html)
-
 	- [Advocates (vs chefs) Resume Analysis](./ResumeStuff/ADV_chef/viz6.html)
 
 	- [Chefs (vs advocates) Resume Analysis](./ResumeStuff/CHEF_adv/viz6.html)
