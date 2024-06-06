@@ -1,0 +1,5 @@
+Category	Ground_truth	Prediction	COUNT
+ADVOCATE	0	No	1806
+ADVOCATE	0	Yes	82
+ADVOCATE	1	No	985
+ADVOCATE	1	Yes	903

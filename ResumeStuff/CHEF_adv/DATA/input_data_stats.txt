@@ -1,0 +1,4 @@
+Category	Ground_truth	Prediction	COUNT
+CHEF	0	No	1888
+CHEF	1	No	600
+CHEF	1	Yes	1288

@@ -1,0 +1,44 @@
+-------------------------------------------------
+LogisticRegression Model fit with saga solver:
+Confusion Matrix:
+TN rot=0, actual=0: 2722
+FP rot=1, actual=0: 69
+FN rot=0, actual=1: 113
+TP rot=1, actual=1: 872
+Accuracy: 0.9518008474576272
+
+
+
+-------------------------------------------------
+LogisticRegression Model fit with sag solver:
+Confusion Matrix:
+TN rot=0, actual=0: 2722
+FP rot=1, actual=0: 69
+FN rot=0, actual=1: 113
+TP rot=1, actual=1: 872
+Accuracy: 0.9518008474576272
+
+
+
+-------------------------------------------------
+LogisticRegression Model fit with newton-cg solver:
+Confusion Matrix:
+TN rot=0, actual=0: 2722
+FP rot=1, actual=0: 69
+FN rot=0, actual=1: 112
+TP rot=1, actual=1: 873
+Accuracy: 0.9520656779661016
+
+
+
+-------------------------------------------------
+LogisticRegression Model fit with lbfgs solver:
+Confusion Matrix:
+TN rot=0, actual=0: 2722
+FP rot=1, actual=0: 69
+FN rot=0, actual=1: 112
+TP rot=1, actual=1: 873
+Accuracy: 0.9520656779661016
+
+
+
