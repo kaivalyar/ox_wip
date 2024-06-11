@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viz. Token-wise Importances</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+<style>
+    h1 {
+        font-weight: bold;
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    h2 {
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .itw {
+        color: green;
+        text-decoration: underline;
+    }
+
+    .teacher {
+        color: red;
+        text-decoration: underline;
+    }    
+</style>
+</head>
+<body style="background: whitesmoke;">
+    
+    <script>
+        /*document.addEventListener('DOMContentLoaded', function() {
+            const files = document.querySelectorAll('#file-list li');
+            files.forEach(fileItem => {
+                const fileName = fileItem.getAttribute('data-file');
+                fetchFile(fileName);
+            });
+        });*/
+        
+        /*document.addEventListener('DOMContentLoaded', function() {
+            for (let i = 0; i <= 4007; i++) {
+                const fileName = `DeNorms/${i}.csv`;
+                fetchFile(fileName);
+
+            }
+        });*/
+
+        /*
+        document.addEventListener('DOMContentLoaded', function() {
+            async function fetchFilesInBatches(start, end, batchSize) {
+                for (let i = start; i <= end; i++) {
+                    const fileName = `DATA/DeNorms/${i}.csv`;
+                    fetchFile(fileName);
+                    if ((i + 1) % batchSize === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 50));  // Pause for 5ms
+                    }
+                }
+            }
+
+            fetchFilesInBatches(0, 5, 1);
+            //fetchFilesInBatches(0, 4007, 100);
+        });
+        */
+
+        async function fetchFilesInBatches(start, end, batchSize) {
+            for (let i = start; i <= end; i++) {
+                const fileName = `DATA/scaled/${i}.csv`;
+                fetchFile(fileName);
+                if ((i + 1) % batchSize === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 50));  // Pause for 5ms
+                }
+            }
+        }
+
+        let poscloud = [];
+        let negcloud = [];
+
+        
+        function fetchFiles() {
+            const start = parseInt(document.getElementById('start').value);
+            const end = parseInt(document.getElementById('end').value);
+            d3.select("#output").innerHTML = "";
+            d3.select("#output").selectAll("*").remove();
+            // d3.select("#cloud").innerHTML = "";
+            // d3.select("#cloud").selectAll("*").remove();
+            poscloud = [];
+            negcloud = [];
+            fetchFilesInBatches(start, end, 1);
+        }
+
+        function fetchFile(fileName) {
+            fetch(fileName)
+                .then(response => response.text())
+                .then(text => {
+                    const data = d3.csvParse(text);
+                    // console.log(fileName);
+                    // console.log(data);
+                    // console.log();
+                    displayData(data, fileName.replace('/', '_').replace('/', '_').replace('.csv', ''));
+                })
+                .catch(error => console.error('Error fetching file:', error));
+        }
+
+        let csvData = null;
+
+        function readCSVFile() {
+            const fileName = `DATA/final_rot.csv`;
+            fetch(fileName)
+                .then(response => response.text())
+                .then(text => {
+                    csvData = d3.csvParse(text);
+                })
+                .catch(error => console.error('Error fetching file:', error));
+        }
+
+        function extractDataFromCSV(rowNumber) {
+            if (!csvData) {
+                readCSVFile();
+            }
+            const dataRow = csvData[rowNumber];
+            // console.log(rowNumber)
+            // console.log(dataRow)
+            // console.log()
+            const groundTruth = dataRow['Ground_truth'];
+            const prediction = dataRow['Prediction'];
+            const rotPredictions = dataRow['ROT_Predictions'];
+
+
+            return {groundTruth, prediction, rotPredictions};
+        }
+
+
+        
+        function displayData(data, fileName) {
+            //console.log(`Data from ${fileName}:`, data);
+            /*const fileName = `sd/${fn}.csv`;
+            fetch(fileName)
+            .then(response => response.text())
+            .then(text => {
+                const newData = d3.csvParse(text);
+                const value = newData[ri][cn];
+            })
+            .catch(error => console.error('Error fetching file:', error));*/
+            const index = fileName.split('_')[2];
+            //console.log(extractDataFromCSV(index));
+            const {groundTruth, prediction, rotPredictions} = extractDataFromCSV(index);
+            
+            const values = data.map(row => parseFloat(row[Object.keys(row)[1]]));
+            const sumOfValues = values.reduce((acc, curr) => acc + curr, 0);
+
+            const negativeVals = values.filter(value => value < 0);
+            const positiveVals = values.filter(value => value >= 0);
+
+            const minNegativeACT = Math.min(...negativeVals);
+            const maxNegativeACT = Math.max(...negativeVals);
+            const minPositiveACT = Math.min(...positiveVals);
+            const maxPositiveACT = Math.max(...positiveVals);
+            const numNegativeACT = negativeVals.length;
+            const numPositiveACT = positiveVals.length;
+
+            //document.getElementById('meta').innerHTML += `File: ${fileName}<br>Range of positive importances: ${minPositiveACT} to ${maxPositiveACT}, total ${numPositiveACT} tokens<br>Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens<br><br>`;
+
+            let minNegative = Math.min(...negativeVals);
+            const maxNegative = 0;
+            const minPositive = 0;
+            let maxPositive = Math.max(...positiveVals);
+
+            if (maxPositive + minNegative > 0) {
+                minNegative = 0 - maxPositive;
+            } else {
+                maxPositive = 0 - minNegative;
+            }
+
+            function normalizeNegative(value, min, max) {
+                return ((value - min) / (max - min)) * -100;
+            }
+
+            function normalizePositive(value, min, max) {
+                return ((value - min) / (max - min)) * 100;
+            }
+
+            function normalize(value) {
+                return Math.abs(100*value);
+                
+                // if (value < 0) {
+                //     return normalizeNegative(value, minNegative, maxNegative);
+                // } else {
+                //     return normalizePositive(value, minPositive, maxPositive);
+                // }
+            }
+
+
+            const sumOfNormalizedValues = data.reduce((acc, row) => {
+                const originalValue = parseFloat(row[Object.keys(row)[1]]);
+                const normalizedValue = normalize(originalValue);
+                return acc + normalizedValue;
+            }, 0);
+
+            d3.select("#output").append("p").attr("class", "file-data").attr("id", `output-${fileName}`);
+            const outputDiv = d3.select(`#output-${fileName}`);
+            outputDiv.append("hr")
+            outputDiv.append("span").text(`${fileName}` + '.csv')
+            outputDiv.append("br")
+            outputDiv.append("span").text(`Range of positive importances: `).style("color", "green")
+            outputDiv.append("span").text(`${minPositiveACT}`).style("background-color", `rgba(0, 255, 0, ${Math.round(normalize(minPositiveACT)) / 100})`)
+            outputDiv.append("span").text(` to `)
+            outputDiv.append("span").text(`${maxPositiveACT}`).style("background-color", `rgba(0, 255, 0, ${Math.round(normalize(maxPositiveACT)) / 100})`)
+            outputDiv.append("span").text(`, total `)
+            outputDiv.append("span").text(`${numPositiveACT}`).style("color", "green")
+            outputDiv.append("span").text(` tokens`)
+            outputDiv.append("br")
+            outputDiv.append("span").text(`Range of negative importances: `).style("color", "red")
+            outputDiv.append("span").text(`${minNegativeACT}`).style("background-color", `rgba(255, 0, 0, ${Math.round(normalize(Math.abs(minNegativeACT))) / 100})`)
+            outputDiv.append("span").text(` to `)
+            outputDiv.append("span").text(`${maxNegativeACT}`).style("background-color", `rgba(255, 0, 0, ${Math.round(normalize(Math.abs(maxNegativeACT))) / 100})`)
+            outputDiv.append("span").text(`, total `)
+            outputDiv.append("span").text(`${numNegativeACT}`).style("color", "red")
+            outputDiv.append("span").text(` tokens`)
+            /*outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)*/
+            outputDiv.append("br")
+
+            outputDiv.append("span").html(`DATA: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${groundTruth} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(` GPT: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${prediction} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(` ROT: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${rotPredictions} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(` sum: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${sumOfValues} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(`nsum: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${sumOfNormalizedValues} </b>`)
+            
+            outputDiv.append("br")
+            outputDiv.append("br")
+            outputDiv.append("br")
+            
+
+            data.forEach(row => {
+                
+                const originalValue = parseFloat(row[Object.keys(row)[1]]);
+                const normalizedValue = normalize(originalValue);
+
+                let backgroundColor;
+                if (originalValue == 0) {
+                    backgroundColor = `rgba(0, 0, 255, 0)`;
+                } else if (originalValue > 0) {
+                    backgroundColor = `rgba(0, 255, 0, ${Math.round(normalizedValue) / 100})`;
+                } else {
+                    backgroundColor = `rgba(255, 0, 0, ${Math.abs(Math.round(normalizedValue)) / 100})`;
+                }
+
+                outputDiv.append("span").text(' ');
+                outputDiv.append("span")
+                    .text(row[Object.keys(row)[0]])
+                    .attr("title", originalValue.toFixed(2))
+                    .style("background-color", backgroundColor);
+            });
+            outputDiv.append("br")
+            outputDiv.append("hr")
+
+        }
+
+    </script>
+
+    <h1 style="text-align: center; font-weight: bold;">Does ChatGPT think your resume is like an <span class="itw" style="color: green;">IT worker</span> or more like a <span class="teacher" style="color: red;">teacher</span></h1>
+    <!-- div id="file-list">
+        <ul>
+            <li data-file="DeNorms/0.csv">DeNorms/0.csv</li>
+        </ul>
+    </div -->
+    
+    <div>
+
+        <div style="display: flex; justify-content: space-between;">
+            <div style="padding: 10px; max-width: 45%;">
+                <h2 style="text-align: center;">Words commonly associated with <span class="itw"> IT workers </span></h2>
+                <img src="positive_weights_wordcloud.png" style="max-width: 100%; padding: 10px;">
+            </div>
+            <div style="padding: 10px; max-width: 45%;">
+                <h2 style="text-align: center;">Words commonly associated with <span class="teacher">teachers</span> </h2>
+                <img src="negative_weights_wordcloud.png" style="max-width: 100%; padding: 10px;">
+            </div>
+        </div>
+        <p>
+            <a href="DATA/input_data_stats.txt" >Data Description</a>
+            <br>
+            <a href="DATA/summary_stats.txt" >RoT fit quality</a>
+            <br>
+            <a href="DATA/logreg-stats.txt" >LogReg fit quality</a>
+        </p>
+        <div style="clear: both;"></div>
+
+        <p>
+        <form onsubmit="fetchFiles(); return false;">
+            <label for="start">Start at Resume: </label>
+            <input type="number" id="start" name="start" value="0">
+            <label for="end">Go until Resume: </label>
+            <input type="number" id="end" name="end" value="5">
+            <button type="submit">Visualise!</button>
+            <button style="float: right;" onclick="add_word_cloud()">Word Cloud</button>
+        </form>
+        <br>
+        </p>
+
+    </div>
+
+
+    <div style="background: white; border: thin solid black; padding: 30px;">
+        <div id="cloud"></div>
+        <br>
+        <div id="output"></div>
+    </div>
+    
+    <div>
+        <p id="meta"></p>
+    </div>
+    
+
+
+
+</body>
+</html>
