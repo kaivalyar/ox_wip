@@ -45,9 +45,19 @@ class RuleOfThumb():
 
         x = torch.from_numpy(x_numpy)
         imp=self._explainer_model.importance(x).detach().numpy()
-        imp= imp.sum(1)
+        
+        # imp= imp.sum(1)
+        # imp = imp[:,0,:] - imp[:,1,:]
+        
+        # print(imp)
+        imp = imp[:,1,:]
+        # print(imp)
+        # print()
+        # print()
+        
         #imp=imp.sum(1)#imp=np.abs(imp).sum(1)
-        #imp = imp[:,0,:] - imp[:,1,:]
+        
+        
         imp=imp.reshape(imp.shape[0],-1)
         return imp # [(_feat, _imp) for _feat, _imp in zip(self._feature_names, imp)]
 
