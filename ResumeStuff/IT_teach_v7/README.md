@@ -47,19 +47,8 @@ and: `http://localhost:9000/viz7.html`
 
 There's too many token histograms to share via GitHub, but a few are below.
 
-### Gender
-![Gender 0](./DATA/distplots/GENDER=0.png)
-![Gender 1](./DATA/distplots/GENDER=1.png)
 
-### Race
-![Race 0](./DATA/distplots/RACE=0.png)
-![Race 1](./DATA/distplots/RACE=1.png)
-
-### Party
-![Party 0](./DATA/distplots/PARTY=0.png)
-![Party 1](./DATA/distplots/PARTY=1.png)
-
-### Others
+## Tokens
 ![CLS](./DATA/distplots/[CLS].png)
 ![SEP](./DATA/distplots/[SEP].png)
 ![Education](./DATA/distplots/education.png)
@@ -72,3 +61,17 @@ There's too many token histograms to share via GitHub, but a few are below.
 ![Systems](./DATA/distplots/systems.png)
 ![Information](./DATA/distplots/information.png)
 ![Teacher](./DATA/distplots/teacher.png)
+
+## Annotations
+### Gender
+![Gender 0](./DATA/distplots/GENDER=0.png)
+![Gender 1](./DATA/distplots/GENDER=1.png)
+
+### Race
+![Race 0](./DATA/distplots/RACE=0.png)
+![Race 1](./DATA/distplots/RACE=1.png)
+
+### Party
+![Party 0](./DATA/distplots/PARTY=0.png)
+![Party 1](./DATA/distplots/PARTY=1.png)
+
