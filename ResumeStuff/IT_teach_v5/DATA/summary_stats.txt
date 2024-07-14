@@ -1,6 +1,0 @@
-
-TN rot=0, actual=0: 463
-FP rot=1, actual=0: 1
-FN rot=0, actual=1: 0
-TP rot=1, actual=1: 424
-TOTAL accuracy: 0.9988738738738738

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viz. Token-wise Importances</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+</head>
+<body style="background: whitesmoke;">
+    
+    <script>
+        /*document.addEventListener('DOMContentLoaded', function() {
+            const files = document.querySelectorAll('#file-list li');
+            files.forEach(fileItem => {
+                const fileName = fileItem.getAttribute('data-file');
+                fetchFile(fileName);
+            });
+        });*/
+        
+        /*document.addEventListener('DOMContentLoaded', function() {
+            for (let i = 0; i <= 4007; i++) {
+                const fileName = `DeNorms/${i}.csv`;
+                fetchFile(fileName);
+
+            }
+        });*/
+
+        /*
+        document.addEventListener('DOMContentLoaded', function() {
+            async function fetchFilesInBatches(start, end, batchSize) {
+                for (let i = start; i <= end; i++) {
+                    const fileName = `DATA/DeNorms/${i}.csv`;
+                    fetchFile(fileName);
+                    if ((i + 1) % batchSize === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 50));  // Pause for 5ms
+                    }
+                }
+            }
+
+            fetchFilesInBatches(0, 5, 1);
+            //fetchFilesInBatches(0, 4007, 100);
+        });
+        */
+
+        let use_denorms = false;
+
+        function setUseDenorms(value) {
+            use_denorms = Boolean(value);
+            // alert(`Value set to: ${use_denorms}`);
+        }
+
+        async function fetchFilesInBatches(start, end, batchSize) {
+            for (let i = start; i <= end; i++) {
+                
+                const fileName = use_denorms ? `DATA/DeNorms/${i}.csv` : `DATA/DIMPS/${i}.csv`;
+                // For use_denorms=true, the file path will be DATA/DeNorms/${i}.csv
+                // For use_denorms=false, the file path will be DATA/DIMPS/${i}.csv
+                
+                fetchFile(fileName);
+                if ((i + 1) % batchSize === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 50));  // Pause for 5ms
+                }
+            }
+        }
+        let poscloud = [];
+        let negcloud = [];
+
+        
+        function fetchFiles() {
+            const useDenormsCheckbox = document.getElementById('use_denorms');
+            const use_denorms = Boolean(useDenormsCheckbox.checked) || false;
+
+            setUseDenorms(use_denorms);
+
+
+
+            
+            const start = parseInt(document.getElementById('start').value);
+            const end = parseInt(document.getElementById('end').value);
+            d3.select("#output").innerHTML = "";
+            d3.select("#output").selectAll("*").remove();
+            // d3.select("#cloud").innerHTML = "";
+            // d3.select("#cloud").selectAll("*").remove();
+            poscloud = [];
+            negcloud = [];
+            fetchFilesInBatches(start, end, 1);
+        }
+
+        function fetchFile(fileName) {
+            fetch(fileName)
+                .then(response => response.text())
+                .then(text => {
+                    const data = d3.csvParse(text);
+                    // console.log(fileName);
+                    // console.log(data);
+                    // console.log();
+                    displayData(data, fileName.replace('/', '_').replace('/', '_').replace('.csv', ''));
+                })
+                .catch(error => console.error('Error fetching file:', error));
+        }
+
+        let csvData = null;
+
+        function readCSVFile() {
+            const fileName = `DATA/final_rot.csv`;
+            fetch(fileName)
+                .then(response => response.text())
+                .then(text => {
+                    csvData = d3.csvParse(text);
+                })
+                .catch(error => console.error('Error fetching file:', error));
+        }
+
+        function extractDataFromCSV(rowNumber) {
+            if (!csvData) {
+                readCSVFile();
+            }
+            const dataRow = csvData[rowNumber];
+            // console.log(rowNumber)
+            // console.log(dataRow)
+            // console.log()
+            const groundTruth = dataRow['Ground_truth'];
+            const prediction = dataRow['Prediction'];
+            const rotPredictions = dataRow['ROT_Predictions'];
+
+
+            return {groundTruth, prediction, rotPredictions};
+        }
+
+
+        
+        function displayData(data, fileName) {
+            //console.log(`Data from ${fileName}:`, data);
+            /*const fileName = `sd/${fn}.csv`;
+            fetch(fileName)
+            .then(response => response.text())
+            .then(text => {
+                const newData = d3.csvParse(text);
+                const value = newData[ri][cn];
+            })
+            .catch(error => console.error('Error fetching file:', error));*/
+            const index = fileName.split('_')[2];
+            //console.log(extractDataFromCSV(index));
+            const {groundTruth, prediction, rotPredictions} = extractDataFromCSV(index);
+            
+            const values = data.map(row => parseFloat(row[Object.keys(row)[1]]));
+            const sumOfValues = values.reduce((acc, curr) => acc + curr, 0);
+
+            const negativeVals = values.filter(value => value < 0);
+            const positiveVals = values.filter(value => value >= 0);
+
+            const minNegativeACT = Math.min(...negativeVals);
+            const maxNegativeACT = Math.max(...negativeVals);
+            const minPositiveACT = Math.min(...positiveVals);
+            const maxPositiveACT = Math.max(...positiveVals);
+            const numNegativeACT = negativeVals.length;
+            const numPositiveACT = positiveVals.length;
+
+            //document.getElementById('meta').innerHTML += `File: ${fileName}<br>Range of positive importances: ${minPositiveACT} to ${maxPositiveACT}, total ${numPositiveACT} tokens<br>Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens<br><br>`;
+
+            let minNegative = Math.min(...negativeVals);
+            const maxNegative = 0;
+            const minPositive = 0;
+            let maxPositive = Math.max(...positiveVals);
+
+            if (maxPositive + minNegative > 0) {
+                minNegative = 0 - maxPositive;
+            } else {
+                maxPositive = 0 - minNegative;
+            }
+
+            function normalizeNegative(value, min, max) {
+                return (((value - min) / (max - min)) * 100) - 100;
+            }
+            // -30, -40, 0
+            // -30 - -40 / 0 - -40
+            // 10 / 40
+            // 25%
+            // -75%
+
+            function normalizePositive(value, min, max) {
+                return ((value - min) / (max - min)) * 100;
+            }
+            // 30, 0, 40
+            // 30-0 / 40-0
+            // 75%
+
+            function normalize(value) {
+                if (value < 0) {
+                    return normalizeNegative(value, minNegative, maxNegative);
+                } else {
+                    return normalizePositive(value, minPositive, maxPositive);
+                }
+            }
+
+
+            const sumOfNormalizedValues = data.reduce((acc, row) => {
+                const originalValue = parseFloat(row[Object.keys(row)[1]]);
+                const normalizedValue = normalize(originalValue);
+                return acc + normalizedValue;
+            }, 0);
+
+            d3.select("#output").append("p").attr("class", "file-data").attr("id", `output-${fileName}`);
+            const outputDiv = d3.select(`#output-${fileName}`);
+            outputDiv.append("hr")
+            outputDiv.append("span").text(`${fileName}` + '.csv')
+            outputDiv.append("br")
+            outputDiv.append("span").text(`Range of positive importances: `).style("color", "green")
+            outputDiv.append("span").text(`${minPositiveACT}`).style("background-color", `rgba(0, 255, 0, ${Math.round(normalize(minPositiveACT)) / 100})`)
+            outputDiv.append("span").text(` to `)
+            outputDiv.append("span").text(`${maxPositiveACT}`).style("background-color", `rgba(0, 255, 0, ${Math.round(normalize(maxPositiveACT)) / 100})`)
+            outputDiv.append("span").text(`, total `)
+            outputDiv.append("span").text(`${numPositiveACT}`).style("color", "green")
+            outputDiv.append("span").text(` tokens`)
+            outputDiv.append("br")
+            outputDiv.append("span").text(`Range of negative importances: `).style("color", "red")
+            outputDiv.append("span").text(`${minNegativeACT}`).style("background-color", `rgba(255, 0, 0, ${Math.round(normalize(Math.abs(minNegativeACT))) / 100})`)
+            outputDiv.append("span").text(` to `)
+            outputDiv.append("span").text(`${maxNegativeACT}`).style("background-color", `rgba(255, 0, 0, ${Math.round(normalize(Math.abs(maxNegativeACT))) / 100})`)
+            outputDiv.append("span").text(`, total `)
+            outputDiv.append("span").text(`${numNegativeACT}`).style("color", "red")
+            outputDiv.append("span").text(` tokens`)
+            /*outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)
+            outputDiv.append("span").text(`Range of negative importances: ${minNegativeACT} to ${maxNegativeACT}, total ${numNegativeACT} tokens`)*/
+            outputDiv.append("br")
+
+            outputDiv.append("span").html(`DATA: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${groundTruth} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(` GPT: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${prediction} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(` ROT: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${rotPredictions} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(` sum: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${sumOfValues} </b>`)
+            outputDiv.append("br")
+            outputDiv.append("span").html(`nsum: &nbsp;&nbsp;&nbsp;&nbsp; <b> ${sumOfNormalizedValues} </b>`)
+            
+            outputDiv.append("br")
+            outputDiv.append("br")
+            outputDiv.append("br")
+            
+
+            data.forEach(row => {
+                const originalValue = parseFloat(row[Object.keys(row)[1]]);
+                
+                let tempNormalizedValue = normalize(originalValue);
+                if (row[Object.keys(row)[0]] === 'RACE=0' || 
+                    row[Object.keys(row)[0]] === 'RACE=1' || 
+                    row[Object.keys(row)[0]] === 'PARTY=0' || 
+                    row[Object.keys(row)[0]] === 'PARTY=1' || 
+                    row[Object.keys(row)[0]] === 'GENDER=0' || 
+                    row[Object.keys(row)[0]] === 'GENDER=1') {
+                    tempNormalizedValue = 100 * originalValue;
+                }
+                const normalizedValue = tempNormalizedValue;
+
+                const titleString = `OG: ${originalValue} | Viz: ${normalizedValue}`;
+
+                
+                let backgroundColor;
+                if (normalizedValue >= 0) {
+                    backgroundColor = `rgba(0, 255, 0, ${Math.round(normalizedValue) / 100})`;
+                } else {
+                    backgroundColor = `rgba(255, 0, 0, ${Math.abs(Math.round(normalizedValue)) / 100})`;
+                }
+
+                outputDiv.append("span").text(' ');
+                outputDiv.append("span")
+                    .text(row[Object.keys(row)[0]])
+                    // .attr("title", normalizedValue.toFixed(2))
+                    .attr("title", titleString)
+                    .style("background-color", backgroundColor);
+            });
+            outputDiv.append("br")
+            outputDiv.append("hr")
+
+
+            // WORDCLOUD - BOOKKEEPING
+
+            // Separate positive and negative values
+            const positiveValues = [];
+            const negativeValues = [];
+
+            data.forEach(row => {
+                const key = Object.keys(row)[1];
+                const value = parseFloat(row[key]);
+                const token = row[Object.keys(row)[0]];
+
+                if (token.length > 2) {
+                    if (value >= 0) {
+                        positiveValues.push({ token, value: normalize(value) });
+                    } else {
+                        negativeValues.push({ token, value: normalize(value) });
+                    }
+                }
+            });
+
+            // Function to get top N percentile values
+            function getTopPercentile(arr, percentile) {
+                const sortedArr = arr.sort((a, b) => b.value - a.value);
+                const topCount = Math.ceil(sortedArr.length * (percentile / 100));
+                return sortedArr.slice(0, topCount);
+            }
+
+            // Get top 10 percentile of largest positive values
+            const top10PercentilePositive = getTopPercentile(positiveValues, 10);
+
+            // Get top 10 percentile of largest magnitude negative values
+            const top10PercentileNegative = getTopPercentile(negativeValues.map(v => ({ token: v.token, value: Math.abs(v.value) })), 10);
+
+            // Logging results
+            // console.log("Top 10 Percentile Positive Values:");
+            // top10PercentilePositive.forEach(item => {
+            //     console.log(`Token: ${item.token}, Value: ${item.value}`);
+            // });
+
+            // console.log("Top 10 Percentile Negative Values:");
+            // top10PercentileNegative.forEach(item => {
+            //     console.log(`Token: ${item.token}, Value: ${-item.value}`); // Negate to get the original negative value
+            // });
+
+            poscloud.push(...top10PercentilePositive);
+            negcloud.push(...top10PercentileNegative);
+
+            // WORDCLOUD START
+            // Combine both sets of data, negating the negative values
+
+
+            
+            
+
+
+        }
+
+        function add_word_cloud() {
+
+            
+            const mergedCloud = poscloud.concat(negcloud.map(item => ({ token: item.token, value: -item.value })));
+            
+            console.log(negcloud)
+            const uniqueCloud = mergedCloud.reduce((acc, current) => {
+                const x = acc.find(item => item.token === current.token);
+                if (!x) {
+                    return acc.concat([current]);
+                } else {
+                    x.value += current.value;
+                    return acc;
+                }
+            }, []);
+            console.log(mergedCloud)
+            console.log(uniqueCloud)
+            const uniquePoscloud = uniqueCloud.filter(item => item.value >= 0);
+            const uniqueNegcloud = uniqueCloud.filter(item => item.value < 0);
+
+
+
+            
+
+            
+            const sortedTop50PercentilePositive = uniquePoscloud.sort((a, b) => b.value - a.value).slice(0, 15);
+            const min_positive = Math.min(...sortedTop50PercentilePositive.map(i => i.value));
+            const max_positive = Math.max(...sortedTop50PercentilePositive.map(i => i.value));
+            const scaledTop50PercentilePositive = sortedTop50PercentilePositive.map(item => ({
+                token: item.token,
+                value: (item.value - min_positive) / (max_positive - min_positive) * 25 + 25
+            }));
+
+            // const scaledTop10PercentilePositive = uniquePoscloud.map(item => ({
+            //     token: item.token,
+            //     value: (item.value - min_positive) / (max_positive - min_positive) * 99 + 1
+            // }));
+            // const sortedScaledTop10PercentilePositive = scaledTop10PercentilePositive.sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 50);
+            
+
+            const sortedTop50PercentileNegative = uniqueNegcloud.sort((a, b) => a.value - b.value).slice(0, 15);
+            const min_negative = Math.min(...sortedTop50PercentileNegative.map(i => Math.abs(i.value)));
+            const max_negative = Math.max(...sortedTop50PercentileNegative.map(i => Math.abs(i.value)));
+            const scaledTop50PercentileNegative = sortedTop50PercentileNegative.map(item => ({
+                token: item.token,
+                value: ((Math.abs(item.value) - min_negative) / (max_negative - min_negative) * 25 + 25) * -1
+            }));
+            
+            console.log(scaledTop50PercentilePositive);
+            console.log(scaledTop50PercentileNegative);
+
+            const combinedData = scaledTop50PercentilePositive.concat(
+                scaledTop50PercentileNegative.map(item => ({
+                    token: item.token,
+                    value: item.value
+                }))
+            );
+            
+            console.log(combinedData);
+            console.log('-----')
+            
+            d3.select("#cloud").innerHTML = "";
+            d3.select("#cloud").selectAll("*").remove();
+
+            // Set the dimensions for the word cloud
+            const width = 800;
+            const height = 400;
+
+            // Create the word cloud layout
+            const layout = d3.layout.cloud()
+                .size([width, height])
+                .words(combinedData.map(d => ({ text: d.token, size: d.value })))
+                .padding(10)
+                .rotate(() => ~~(Math.random() * 2) * 90)
+                .font("Arial")
+                .fontSize(d => d.size)
+                .on("end", draw);
+
+            layout.start();
+
+            // Draw the word cloud
+            function draw(words) {
+                d3.select("#cloud").append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+                    .selectAll("text")
+                    .data(words)
+                    .enter().append("text")
+                    .style("font-size", d => Math.abs(d.size) + "px")
+                    .style("font-family", "Arial")
+                    .style("fill", d => d.size > 0 ? "green" : "red") // Set color based on positive or negative value
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
+                    .text(d => d.text);
+            }
+            // WORDCLOUD END
+        }
+    </script>
+
+    <h1 style="text-align: center; font-weight: bold;">Does ChatGPT think your resume is like an <span class="itw" style="color: green;">IT worker</span> or more like a <span class="teacher" style="color: red;">teacher</span></h1>
+        
+        
+    <div>
+
+        <div style="display: flex; justify-content: space-between;">
+            <div style="padding: 10px; max-width: 45%;">
+                <h2 style="text-align: center;">Words commonly associated with <span class="itw"> IT workers </span></h2>
+                <img src="positive_weights_wordcloud.png" style="max-width: 100%; padding: 10px;">
+            </div>
+            <div style="padding: 10px; max-width: 45%;">
+                <h2 style="text-align: center;">Words commonly associated with <span class="teacher">teachers</span> </h2>
+                <img src="negative_weights_wordcloud.png" style="max-width: 100%; padding: 10px;">
+            </div>
+        </div>
+        
+        <p>
+            <a href="DATA/input_data_stats.txt" >Data Description</a>
+            <br>
+            <a href="DATA/summary_stats.txt" >RoT fit quality</a>
+            <br>
+            <a href="DATA/logreg-stats.txt" >LogReg fit quality</a>
+            
+        </p>
+        <div style="clear: both;"></div>
+
+        <p>
+        <form onsubmit="fetchFiles(); return false;">
+            <label for="start">Start at Resume: </label>
+            <input type="number" id="start" name="start" value="0">
+            
+            <label for="end">Go until Resume: </label>
+            <input type="number" id="end" name="end" value="5">
+            
+            <label for="use_denorms">Use (Legacy) "DeNorms":</label>
+            <input type="checkbox" id="use_denorms" name="use_denorms">
+            
+            <button type="submit">Visualise!</button>
+            
+            <button style="float: right;" onclick="add_word_cloud()">Word Cloud</button>
+        </form>
+        <br>
+        </p>
+
+    </div>
+
+
+    <div style="background: white; border: thin solid black; padding: 30px;">
+        <div id="cloud"></div>
+        <br>
+        <div id="output"></div>
+    </div>
+    
+    <div>
+        <p id="meta"></p>
+    </div>
+    
+
+
+
+</body>
+</html>
