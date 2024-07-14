@@ -9,4 +9,4 @@
 
 - [Data Distribution Plots](https://github.com/kaivalyar/ox_wip/blob/main/DataDistributionPlots/README.md)
 
-- [GenAI for Resume Classification](./ResumeStuff/IT_teach_v6/viz8.html)
+- [GenAI for Resume Classification](./ResumeStuff/IT_teach_v7/viz8.html)
