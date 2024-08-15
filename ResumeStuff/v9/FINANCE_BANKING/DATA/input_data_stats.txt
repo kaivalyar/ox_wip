@@ -1,0 +1,5 @@
+Category	Ground_truth	Prediction	COUNT
+FINANCE	0	No	35
+FINANCE	0	Yes	80
+FINANCE	1	No	6
+FINANCE	1	Yes	112

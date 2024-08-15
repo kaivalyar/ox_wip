@@ -1,0 +1,8 @@
+
+TN rot=0, actual=0: 41
+FP rot=1, actual=0: 0
+FN rot=0, actual=1: 0
+TP rot=1, actual=1: 192
+TOTAL accuracy: 1.0
+ROT global importance value is: Parameter containing:
+tensor([-0.0742,  0.0742], requires_grad=True)
